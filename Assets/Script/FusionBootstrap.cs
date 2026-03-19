@@ -4,16 +4,39 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Fusion;
 using Fusion.Sockets;
+using UnityEngine.Windows;
 
 public class FusionBootstrap : MonoBehaviour , INetworkRunnerCallbacks
 {
     [Header("Session")]
     [SerializeField] private string sessionName = "Room_01";
 
+    [Header("Player")]
+    [SerializeField] private NetworkPrefabRef playerPrefab;
+    [SerializeField] private Transform[] spawnPoints;
+
+    private Dictionary<PlayerRef, NetworkObject> playerObjects = new();
+
     private NetworkRunner runner;
+
+    public struct NetworkInputData : INetworkInput
+    {
+        public Vector2 move;
+    }
 
     public void StartHost() => _ = StartGame(GameMode.Host);
     public void StartClient() => _ = StartGame(GameMode.Client);
+
+    private Vector3 GetSpawnPosition(PlayerRef player)
+    {
+        if(spawnPoints != null && spawnPoints.Length > 0)
+        {
+            int index = player.RawEncoded % spawnPoints.Length;
+            return spawnPoints[index].position;
+        }
+
+        return new Vector3(player.RawEncoded * 2,1,0);
+    }
 
     private async Task StartGame(GameMode mode)
     {
@@ -51,10 +74,49 @@ public class FusionBootstrap : MonoBehaviour , INetworkRunnerCallbacks
         
     }
 
-    public void OnPlayerJoined(NetworkRunner runner, PlayerRef player) { }
-    public void OnPlayerLeft(NetworkRunner runner, PlayerRef player) { }
+    public void OnPlayerJoined(NetworkRunner runner, PlayerRef player)
+    {
+        Debug.Log($" 플레이어 입장 : {player}");
 
-    public void OnInput(NetworkRunner runner, NetworkInput Input) { }
+        if (runner.IsPlayer == false)
+            return;
+
+        Vector3 spawnPos = GetSpawnPosition(player);
+
+        var obj = runner.Spawn(
+            playerPrefab,
+            spawnPos,
+            Quaternion.identity,
+            player
+        );
+
+        playerObjects[player] = obj;
+
+    }
+    public void OnPlayerLeft(NetworkRunner runner, PlayerRef player)
+    {
+        if(!runner.IsServer) return;
+
+        if(playerObjects.TryGetValue(player, out var obj))
+        {
+            runner.Despawn(obj);
+            playerObjects.Remove(player);
+        }
+
+        Debug.Log($"플레이어 제거됨 : {player}");
+    }
+
+    public void OnInput(NetworkRunner runner, NetworkInput input)
+    {
+        NetworkInputData data = new NetworkInputData();
+
+        data.move = new Vector2(
+            UnityEngine.Input.GetAxisRaw("Horizontal"),
+            UnityEngine.Input.GetAxisRaw("Vertical")
+            );
+
+        input.Set(data);
+    }
     public void OnInputMissing(NetworkRunner runner,PlayerRef player,  NetworkInput Input) { }
 
     public void OnConnectedToServer(NetworkRunner runner) { }
