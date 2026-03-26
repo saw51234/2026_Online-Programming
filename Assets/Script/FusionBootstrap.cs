@@ -22,6 +22,13 @@ public class FusionBootstrap : MonoBehaviour , INetworkRunnerCallbacks
     public struct NetworkInputData : INetworkInput
     {
         public Vector2 move;
+        public NetworkButtons buttons;
+    }
+
+    public enum InputButton
+    {
+        Fire = 0,
+
     }
 
     public void StartHost() => _ = StartGame(GameMode.Host);
@@ -113,7 +120,12 @@ public class FusionBootstrap : MonoBehaviour , INetworkRunnerCallbacks
         data.move = new Vector2(
             UnityEngine.Input.GetAxisRaw("Horizontal"),
             UnityEngine.Input.GetAxisRaw("Vertical")
-            );
+         );
+
+        var buttons = new NetworkButtons();
+        buttons.Set((int)InputButton.Fire, UnityEngine.Input.GetMouseButton(0));
+
+        data.buttons = buttons;
 
         input.Set(data);
     }
