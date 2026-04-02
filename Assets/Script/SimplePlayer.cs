@@ -10,6 +10,9 @@ public class SimplePlayer : NetworkBehaviour
     [SerializeField] private NetworkPrefabRef bulletPrefabs;
     [SerializeField] private Transform firePoint;
 
+    [SerializeField] private float fireDistance = 20f;
+    [SerializeField] private LayerMask hitMask;
+
     [Networked] private TickTimer FireCoolDown { get; set; }
     [SerializeField] private float fireInterval = 0.2f;
 
@@ -36,7 +39,7 @@ public class SimplePlayer : NetworkBehaviour
         {
             if (FireCoolDown.ExpiredOrNotRunning(Runner))
             {
-                Fire();
+                FireLagCompensated();
                 FireCoolDown = TickTimer.CreateFromSeconds(Runner, fireInterval);
             }
         }
@@ -62,6 +65,45 @@ public class SimplePlayer : NetworkBehaviour
         {
             bullet.Init(Object.InputAuthority);
         }
+    }
+
+    private void FireLagCompensated()
+    {
+        if (!Object.HasStateAuthority) return;
+
+        Vector3 origin = firePoint != null ? firePoint.position : transform.position + Vector3.up * 0.5f;
+        Vector3 direction = transform.forward;
+
+        if (Runner.LagCompensation.Raycast(
+            origin,
+            direction,
+            fireDistance,
+            Object.InputAuthority,
+            out LagCompensatedHit hit,
+            hitMask
+        ))
+        {
+            Debug.Log($"LagComp Hit : {hit.Hitbox.name}");
+
+            RPC_PlayHitEffect(hit.Point, hit.Normal);
+
+            Hitbox hitbox = hit.Hitbox;
+            if (hitbox != null)
+            {
+                HealthTarget target = hitbox.GetComponentInParent<HealthTarget>();
+                if(target != null)
+                {
+                    target.TakeDamage(1);
+                }
+            }
+        }
+    }
+
+    [Rpc(RpcSources.StateAuthority, RpcTargets.All)]
+    private void RPC_PlayHitEffect(Vector3 pos, Vector3 normal)
+    {
+        if (EffectManager.instance == null) return;
+        EffectManager.instance.PlayerWorldEffect(EffectManager.instance.HitEffect, pos, normal);
     }
 
 }
