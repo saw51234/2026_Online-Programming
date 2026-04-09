@@ -28,6 +28,7 @@ public class FusionBootstrap : MonoBehaviour , INetworkRunnerCallbacks
     public enum InputButton
     {
         Fire = 0,
+        Jump = 1
 
     }
 
@@ -85,7 +86,7 @@ public class FusionBootstrap : MonoBehaviour , INetworkRunnerCallbacks
     {
         Debug.Log($" 플레이어 입장 : {player}");
 
-        if (runner.IsPlayer == false)
+        if (!runner.IsServer)
             return;
 
         Vector3 spawnPos = GetSpawnPosition(player);
@@ -124,6 +125,7 @@ public class FusionBootstrap : MonoBehaviour , INetworkRunnerCallbacks
 
         var buttons = new NetworkButtons();
         buttons.Set((int)InputButton.Fire, UnityEngine.Input.GetMouseButton(0));
+        buttons.Set((int)InputButton.Jump, UnityEngine.Input.GetKey(KeyCode.Space));
 
         data.buttons = buttons;
 
