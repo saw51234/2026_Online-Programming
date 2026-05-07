@@ -2201,7 +2201,7 @@ GameObject:
   - component: {fileID: 7029821883347476668}
   - component: {fileID: 1345371383976592308}
   m_Layer: 0
-  m_Name: Player
+  m_Name: Player_01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2320,7 +2320,7 @@ MonoBehaviour:
   m_Script: {fileID: -1552182283, guid: e725a070cec140c4caffb81624c8c787, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Fusion.Runtime.dll::Fusion.NetworkObject
-  SortKey: 874450843
+  SortKey: 2505804104
   ObjectInterest: 1
   Flags: 262145
   NestedObjects: []

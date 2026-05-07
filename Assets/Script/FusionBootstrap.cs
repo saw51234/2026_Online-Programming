@@ -12,12 +12,21 @@ public class FusionBootstrap : MonoBehaviour , INetworkRunnerCallbacks
     [SerializeField] private string sessionName = "Room_01";
 
     [Header("Player")]
-    [SerializeField] private NetworkPrefabRef playerPrefab;
+    //[SerializeField] private NetworkPrefabRef playerPrefab;
+    [SerializeField] private NetworkPrefabRef[] playerPrefab;
     [SerializeField] private Transform[] spawnPoints;
 
     [Header("Pickable Box")]
     [SerializeField] private NetworkPrefabRef pickableBoxPrefab;
     [SerializeField] private Transform[] boxSpawnPoints;
+
+    [SerializeField] private int maxPlayers = 4;
+    [SerializeField] private int maxPlayersPerTeam = 2;
+
+    [Header("Lobby")]
+    [SerializeField] private NetworkPrefabRef lobbyDataPrefab;
+
+    private Dictionary<PlayerRef, NetworkObject> lobbyObjects = new();
 
     private bool boxesSpawned = false;
 
@@ -121,6 +130,19 @@ public class FusionBootstrap : MonoBehaviour , INetworkRunnerCallbacks
         
     }
 
+    public bool CanJoinTeam(int teamIndex)
+    {
+        int count = 0;
+        foreach (var pair in lobbyObjects)
+        {
+            PlayerLobbyData data = pair.Value.GetComponent<PlayerLobbyData>();
+
+            if(data != null && data.TeamIndex == teamIndex) count++;
+        }
+
+        return count < maxPlayersPerTeam;
+    }
+
     public void OnPlayerJoined(NetworkRunner runner, PlayerRef player)
     {
         Debug.Log($" 플레이어 입장 : {player}");
@@ -128,17 +150,21 @@ public class FusionBootstrap : MonoBehaviour , INetworkRunnerCallbacks
         if (!runner.IsServer)
             return;
 
-        Vector3 spawnPos = GetSpawnPosition(player);
+        if(lobbyObjects.Count >= maxPlayers)
+        {
+            Debug.LogWarning($"최대 인원 초과 : {player}");
+            return;
+        }
 
-        var obj = runner.Spawn(
-            playerPrefab,
-            spawnPos,
+        NetworkObject lobbyObj = runner.Spawn(
+            lobbyDataPrefab,
+            Vector3.zero,
             Quaternion.identity,
-            player
-        );
+            player);
 
-        playerObjects[player] = obj;
-        runner.SetPlayerObject(player, obj);
+        lobbyObjects[player] = lobbyObj;
+
+        Debug.Log($"로비 데이터 생성 완료 : {player}");
     }
     public void OnPlayerLeft(NetworkRunner runner, PlayerRef player)
     {
